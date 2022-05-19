@@ -27,6 +27,21 @@
           font-size: 3.5rem;
         }
       }
+      .bg-info {
+        background: #e8f9ff!important;
+      }
+      .bg-primary {
+        background: #f4e8ff!important;
+      }
+      .bg-warning {
+        background: #feffe8!important;
+      }
+      .bg-danger {
+        background: #ffe8e8!important;
+      }
+      .bg-secondary {
+        background: #fefefe!important;
+      }
     </style>
 
     
@@ -36,51 +51,69 @@
 <main>
   <div class="container py-4">
     <header class="pb-3 mb-4 border-bottom">
-      <a href="https://miro.com/app/board/uXjVONA9A_w=/?share_link_id=234842848616" class="d-flex align-items-center text-dark text-decoration-none">
-        
+      <a href="{% url 'home' %}" class="d-flex align-items-center text-dark text-decoration-none">
+      
         <span class="fs-4">Robot Barkeeping Project</span>
       </a>
     </header>
 
     <div class="row align-items-md-stretch">
+      {% if result %}
+      <div class="col-12">
+        <div class="alert alert-success" role="alert">
+          {{ result }}
+        </div>
+        
+      </div>
+      {% endif %}
+      <div class="col-md-6">
+        
 
-      <div class="col-md-6">
-        <div class="h-100 p-5 text-white {% if active_1 == 1 %} bg-info {% else %} bg-secondary {% endif %} rounded-3">
-          <h2>1 Your Choice of Liquor</h2>
-          
-          <p>Position the liquor's drink in front of the camera.</p>
-          <p>Current Logic: Captures the image, Uses pytesseract to convert image to string</p>
-          <a href="{% url 'camera_start' %}" class="btn btn-outline-light">Start Camera</a>
+        <div class="h-100 p-5 text-secondary {% if active_1 == 1 %} bg-info{% else %} bg-secondary {% endif %} border rounded-3">
+          <h4>1️⃣ Look for Recipe</h4>
+          <p> The current logic goes: <br>
+          Step 1: Show recipe label in camera. <br>
+          Step 2: Wait for 10s to capture<br>
+          Step 3: Find the recipe in the recipe book </p>
+          <a href="{% url 'camera_start' %}" class="btn btn-secondary mb-3">Start Camera</a>
         </div>
       </div>
       <div class="col-md-6">
-        <div class="h-100 p-5 text-white {% if active_2 == 1 %} bg-primary{% else %} bg-secondary {% endif %} border rounded-3">
-          <h2>2 Your Empty Glass</h2>
-          <p>Position the empty glass on the weight sensor.</p>
-          <p>Current Logic: If the weight is between 60-80g</p>
-          <a href="{% url 'loadcell_start' %}" class="btn btn-outline-light">Start Loadcell</a>
+        <div class="h-100 p-5 text-secondary {% if active_2 == 1 %} bg-primary{% else %} bg-secondary {% endif %} border rounded-3">
+          <h4>2️⃣ Look for Empty Cup</h4>
+          <p>The current logic goes: <br>
+            Step 1: Put the cup on top of the eletrical sensor<br>
+            Step 2: Wait for result. The load cell will try to read with a max of 20 attempts<br>
+            </p>
+          <a href="{% url 'loadcell_start' %}" class="btn btn-secondary">Start Loadcell</a>
         </div>
       </div>
       <div class="col-md-6 mt-3">
-        <div class="h-100 p-5 text-white {% if active_3 == 1 %} bg-warning{% else %} bg-secondary {% endif %}  border rounded-3">
-          <h2>3 Eyes of the Robot </h2>
-          <p>Or, keep it light and add a border for some added definition to the boundaries of your content. Be sure to look under the hood at the source HTML.</p>
-          <a href="{% url 'robot_homing' %}" class="btn btn-outline-light">Homing</a>
-          <a href="{% url 'robot_grab' %}" class="btn btn-outline-light">Grab</a>
-          <a href="{% url 'robot_pour' %}" class="btn btn-outline-light">Pour</a>
+        <div class="h-100 p-5 text-secondary {% if active_3 == 1 %} bg-warning{% else %} bg-secondary {% endif %}  border rounded-3">
+          <h2>3 Robotic Movements </h2>
+          <p>Watch robot perform specifc task</p>
+          <a href="{% url 'robot_homing' %}" class="btn btn-secondary">Homing</a>
+          <a href="{% url 'robot_grab' %}" class="btn btn-secondary">Grab</a>
+          <a href="{% url 'robot_pour' %}" class="btn btn-secondary">Pour</a>
+          <p class="mt-2">Kinematics solver:</p>
+          <a href="{% url 'robot_kinematics_forward' %}" class="btn btn-secondary">Forward Kinematics</a>
+          <a href="{% url 'robot_kinematics_inverse' %}" class="btn btn-secondary">Inverse Kinematics</a>
         </div>
       </div>
       <div class="col-md-6 mt-3">
-        <div class="h-100 p-5 text-white {% if active_4 == 1 %} bg-danger{% else %} bg-secondary {% endif %} border rounded-3">
-          <h2>Run All Scripts</h2>
+        <div class="h-100 p-5 text-secondary {% if active_4 == 1 %} bg-danger{% else %} bg-secondary {% endif %} border rounded-3">
+          <h2>Create Event</h2>
+
           <p>Or, keep it light and add a border for some added definition to the boundaries of your content. Be sure to look under the hood at the source HTML.</p>
-          <a href="{% url 'event_create' %}" class="btn btn-outline-light">Start Event</a>
+          <a href="{% url 'event_create' %}" class="btn btn btn-secondary">Start Event</a>
+          <a href="{% url 'event_history' %}" class="btn btn btn-secondary">See All Records</a>
         </div>
       </div>
     </div>
 
     <footer class="pt-3 mt-4 text-muted border-top">
-      &copy; 2022 / Ideation Board <a href="https://miro.com/app/board/uXjVONA9A_w=/?share_link_id=234842848616" target="_blank">here / <a href="{% url 'api_event_history' %}">API here</a>
+      <a href="https://miro.com/app/board/uXjVONA9A_w=/?share_link_id=234842848616" class="link-secondary" target="_blank">Ideation Board</a>
+      / <a href="{% url 'api_event_history' %}" class="link-secondary">API here</a>
     </footer>
   </div>
 </main>

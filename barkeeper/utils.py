@@ -1,3 +1,4 @@
+from locale import DAY_1
 import sys
 import fake_rpi
 sys.modules['RPi'] = fake_rpi.RPi     # Fake RPi
@@ -484,3 +485,38 @@ class HX711:
         self.power_up()
 # EOF - hx711.py
 
+# Denavit-Hartenberg Parameters for 4-DOF
+alpha_1 = 180 #degree
+alpha_2 = 180 #degree
+alpha_3 = 180 #degree
+alpha_4 = 90 #degree
+a_1 = 13.6 #cm
+a_2 = 12 #cm
+a_3 = 6 #cm
+a_4 = 12 #cm
+a_5 = 19 #cm
+a_6 = 5.5 #cm
+
+def forward_kinematics(theta_1,theta_2,theta_3,theta_4):
+    PT = [
+        [theta_1, alpha_1, 0, a_1],
+        [theta_2, alpha_2, a_2, 0],
+        [theta_3, alpha_3, a_3, 0],
+        [theta_4, alpha_4, a_4, a_5]
+        ]
+
+    displacement_x = 0
+    displacement_y = 0
+    displacement_z = 0
+    result = [displacement_x, displacement_y, displacement_z]
+
+    return result
+
+def inverse_kinematics(displacement_x,displacement_y,displacement_z):
+    theta_1 = 0
+    theta_2 = 0
+    theta_3 = 0
+    theta_4 = 0
+    result = [theta_1, theta_2, theta_3, theta_4]
+    return result
+    

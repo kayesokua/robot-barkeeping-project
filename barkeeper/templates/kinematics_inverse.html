@@ -1,0 +1,139 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>Robot Barkeeper Project</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/5.1/examples/checkout/">
+
+  
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+
+    
+    <!-- Custom styles for this template -->
+    <link href="form-validation.css" rel="stylesheet">
+  </head>
+  <body class="bg-white">
+    
+    <div class="container py-4">
+        <header class="pb-3 mb-4 border-bottom">
+          <a href="{% url 'home' %}" class="d-flex align-items-center text-dark text-decoration-none">
+            
+            <span class="fs-4">Robot Barkeeper Project</span>
+          </a>
+          
+        </header>
+    <div class="row g-5">
+      <div class="col-md-8 col-lg-6">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Joint<sub>i</sub></th>
+              <th scope="col">θ <sub>i</sub></th>
+              <th scope="col">α<sub>i</sub></th>
+              <th scope="col">r<sub>i</sub></th>
+              <th scope="col">d<sub>i</sub></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">1</th>
+              <td>θ <sub>1</sub></td>
+              <td>π</td>
+              <td>-</td>
+              <td>a<sub>1</sub></td>
+            </tr>
+            <tr>
+              <th scope="row">2</th>
+              <td>θ <sub>2</sub></td>
+              <td>π</td>
+              <td>a<sub>2</sub></td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <th scope="row">3</th>
+              <td>θ <sub>3</sub></td>
+              <td>π</td>
+              <td>a<sub>3</sub></td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <th scope="row">4</th>
+              <td>θ <sub>4</sub></td>
+              <td>-π/2</td>
+              <td>a<sub>4</sub></td>
+              <td>a<sub>5</sub></td>
+            </tr>
+            
+           
+          </tbody>
+        </table>
+
+        <h4 class="mb-3 mt-5">Solve for Inverse Kinematics</h4>
+        
+        <form class="needs-validation" action="{% url 'robot_kinematics_inverse_result' %}">
+          <div class="row g-3">
+            <div class="col-sm-3">
+              <label for="firstName" class="form-label">Target X</label>
+              <input type="number" class="form-control" name="target_x" placeholder="" value="{{ d_x }}" required>
+            </div>
+
+            <div class="col-sm-3">
+              <label for="lastName" class="form-label">Target Y</label>
+              <input type="number" class="form-control" name="target_y" placeholder="" value="{{ d_y }}" required>
+            </div>
+
+            <div class="col-sm-3">
+              <label for="lastName" class="form-label">Target Z</label>
+              <input type="number" class="form-control" name="target_z" placeholder="" value="{{ d_z }}" required>
+
+            </div>
+            
+            <div class="col-sm-3">
+              <label for="lastName" class="form-label"></label>
+              <button class="w-100 btn btn-primary btn-lg" type="submit">Submit</button>
+            </div>
+        </form>
+
+        <hr class="my-4">
+        {% if answer %}
+        <p class="lead text-primary">The values for θ <sub>1</sub>,  θ <sub>2</sub>,  θ <sub>3</sub>,  θ <sub>4</sub> should be
+           {{ answer }}</p>
+      
+        {% endif %}
+      </div>
+    </div>
+  </main>
+
+  <footer class="pt-3 mt-4 text-muted border-top">
+    <a href="https://miro.com/app/board/uXjVONA9A_w=/?share_link_id=234842848616" class="link-secondary" target="_blank">Ideation Board</a>
+    / <a href="{% url 'api_event_history' %}" class="link-secondary">API here</a>
+  </footer>
+</div>
+
+
+    <script src="../assets/dist/js/bootstrap.bundle.min.js"></script>
+
+      <script src="form-validation.js"></script>
+  </body>
+</html>
