@@ -1,3 +1,4 @@
+from cmath import cos
 from locale import DAY_1
 import sys
 import fake_rpi
@@ -6,12 +7,14 @@ sys.modules['RPi.GPIO'] = fake_rpi.RPi.GPIO # Fake GPIO
 
 import time
 import datetime
+from math import acos, atan, atan2, sqrt, pi, cos, sin, tan
+import numpy as np
+import scipy.linalg
 
 import RPi.GPIO as GPIO
 #from picamera import PiCamera
 #from picamera.array import PiRGBArray
 from PIL import Image
-from numpy import asarray
 #import pytesseract
 
 camera_switch = True
@@ -486,37 +489,77 @@ class HX711:
 # EOF - hx711.py
 
 # Denavit-Hartenberg Parameters for 4-DOF
-alpha_1 = 180 #degree
-alpha_2 = 180 #degree
-alpha_3 = 180 #degree
-alpha_4 = 90 #degree
-a_1 = 13.6 #cm
-a_2 = 12 #cm
-a_3 = 6 #cm
-a_4 = 12 #cm
-a_5 = 19 #cm
-a_6 = 5.5 #cm
+a_1= 16 #cm
+a_2= 11.4 #cm
+a_3= 14.8 #cm
+
+d_1 = 13.6 #cm displacement of the waist axis to the lower arm axis 
+d_2 = 12 #cm length of lower arm axis to upper arm axis
+d_3 = 6 #cm length of upper_arm axis to wrist axis
+d_4 = 12 #cm length of wrist axis to center of gripper
+d_5 = 19 #cm displacement of center of gripper to waist axis
+d_6 = 5.5 #cm displacement of waist axis to ground
 
 def forward_kinematics(theta_1,theta_2,theta_3,theta_4):
-    PT = [
-        [theta_1, alpha_1, 0, a_1],
-        [theta_2, alpha_2, a_2, 0],
-        [theta_3, alpha_3, a_3, 0],
-        [theta_4, alpha_4, a_4, a_5]
-        ]
 
-    displacement_x = 0
-    displacement_y = 0
-    displacement_z = 0
-    result = [displacement_x, displacement_y, displacement_z]
+    # Declare the Denavit-Hartenberg table. 
+    # It will have four columns, to represent:
+    # theta, alpha, r, and d
+    # We have the convert angles to radians.
+    PT = [[np.deg2rad(theta_1), np.deg2rad(180), 0, a_1],
+      [np.deg2rad(theta_2), np.deg2rad(180), a_2, 0],
+      [np.deg2rad(theta_3), np.deg2rad(180), a_3, 0]]
 
-    return result
+   # Homogeneous Transformation Matrices - Solution 1
+    i = 0
+    H0_1 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
+            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
+            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
+            [0, 0, 0, 1]]
+
+    i = 1
+    H1_2 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
+            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
+            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
+            [0, 0, 0, 1]]
+
+    i = 2
+    H2_3 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
+            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
+            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
+            [0, 0, 0, 1]]
+    
+    H0_2 = np.dot(H0_1,H1_2)
+    H0_3 = np.dot(H0_2,H2_3)
+    H0_3_final = np.matrix(H0_3, dtype=np.int)
+
+    # Homogeneous Transformation Matrices - Solution 2
+    displacement_x = a_2*cos(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)) + a_3*cos(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)+np.deg2rad(theta_3))
+    displacement_y = a_2*sin(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)) + a_3*sin(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)+np.deg2rad(theta_3))    
+    displacement_z = a_1 + a_2*sin(np.deg2rad(theta_2))+ a_3*sin(np.deg2rad(theta_2)+np.deg2rad(theta_3))
+
+    result = {"x":round(displacement_x,2), "y":round(displacement_y,2), "z":round(displacement_z,2)}
+   
+    return str(H0_3_final), str(result)
+
 
 def inverse_kinematics(displacement_x,displacement_y,displacement_z):
-    theta_1 = 0
-    theta_2 = 0
-    theta_3 = 0
+    r2 = sqrt(displacement_x**2+displacement_y**2) # equation 1
+    T1 = acos(((r2**2)+(displacement_x**2)-(displacement_y**2))/(2*r2*displacement_x)) #equation 2
+    r1 = sqrt((displacement_z-a_1)*(displacement_z-a_1)+(r2*r2)) #equation 3
+    phi1 = atan((displacement_z-a_1)/r2) #equation 4
+    #phi2 = acos(((a_2**2)+(r1**2)-(a_3**2))/(2*a_2*r1)) #equation 5
+    #T2 = phi1+phi2 #radians #equation 6
+    #phi3 = acos(((a_3**2)+(r1*r1)-(a_2**2))/(2*a_3*r1)) #equation 7
+    #T3 = 1.5708-phi2-phi3 #radians #equation 8
+    T3 = 1
+    T2 = 1
+    T1 = 1
+    theta_1 = 180-T3/3.14159*180.0-10
+    theta_2 = T2/3.14159*180.0+10
+    theta_3 = T1/3.14159*180
     theta_4 = 0
-    result = [theta_1, theta_2, theta_3, theta_4]
+    result = [round(theta_1,2), round(theta_2,2), round(theta_3,2), round(theta_4,2)]
+    
     return result
     

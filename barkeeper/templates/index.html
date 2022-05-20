@@ -107,6 +107,15 @@
           <p>Or, keep it light and add a border for some added definition to the boundaries of your content. Be sure to look under the hood at the source HTML.</p>
           <a href="{% url 'event_create' %}" class="btn btn btn-secondary">Start Event</a>
           <a href="{% url 'event_history' %}" class="btn btn btn-secondary">See All Records</a>
+          <form method="post" class="mt-2">
+            {% csrf_token %}
+              <textarea name="picamera_img_val" style="display: none">{{randomized_array}}</textarea>
+              <textarea name="ocr_text" style="display: none">{{randomized_text}}</textarea>
+              <input type="number" name="weight" value="{{randomized_weight}}" style="display: none">
+              <input type="checkbox" name="score" {% if randomized_score == "True" %}checked{% endif %}style="display: none">
+              <input type="submit" class="btn btn btn-secondary" value="Start Dummy Event">
+          </form>
+
         </div>
       </div>
     </div>

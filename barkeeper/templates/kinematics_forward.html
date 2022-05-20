@@ -110,9 +110,10 @@
             </div>
             <div class="col-sm-3">
               <label for="lastName" class="form-label">θ <sub>4</sub></label>
-              <input type="number" class="form-control" name="angle_4" min="-90" max="0" placeholder="-90 to 0" value="{{ theta_4 }}" required>
+              <input type="number" class="form-control" name="angle_4" min="-90" max="0" placeholder="0 to 180" value="{{ theta_4 }}" required>
 
             </div>
+            
             
             <div class="col-sm-6">
               <label for="lastName" class="form-label"></label>
@@ -122,10 +123,9 @@
 
         <hr class="my-4">
         {% if answer %}
-        <p class="lead text-primary">The values for x,y,z</sub> should be
+        <p class="lead text-primary">Solution set:
            {{ answer }}</p>
-      
-        {% endif %}
+           {% endif %}
       </div>
     </div>
   </main>

@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'fake_rpi',
     'random_word',
-    'debug_toolbar'
+    'debug_toolbar',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [

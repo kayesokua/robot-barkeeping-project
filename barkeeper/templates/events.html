@@ -62,20 +62,23 @@
         {% if successful_drinks %}
         <ul>
             {% for drink in successful_drinks %}
-                <li>{{ drink.created_at }} / {{ drink.ocr_text }}</li>
+                <li>{{ drink.created_at }} / {{ drink.ocr_text }}
+                    <br>{{ drink.picamera_img_val }}</li>
             {% endfor %}
         </ul>
             {% else %}
             <p> No successful drinks yet.</p>
             {% endif %}
         </div>
-        <div class="col-8">
+        <div class="col-12">
         <h2>Failed Orders</h2>
             {% if failed_drinks %}
             <div class="col-12">
                 <ul>
             {% for drink_failed in failed_drinks %}
-                <li> {{ drink_failed.created_at }} / {{ drink_failed.ocr_text }} </li> 
+                <li> {{ drink_failed.created_at }} / {{ drink_failed.ocr_text }}
+                    <br>{{ drink_failed.picamera_img_val }}
+                </li> 
             {% endfor %}
                 </ul>
             {% else %}

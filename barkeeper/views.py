@@ -1,4 +1,5 @@
 from difflib import diff_bytes
+import random
 import sys
 import fake_rpi
 
@@ -9,10 +10,12 @@ print(sys.modules['RPi.GPIO'])
 from django.contrib.auth.models import User
 from rest_framework import permissions
 from barkeeper.models import Event
+from barkeeper.forms import EventForm
 from barkeeper.utils import *
 from barkeeper.serializers import EventSerializer, UserSerializer
 from rest_framework import generics
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
+from random_word import RandomWords
 
 import RPi.GPIO as GPIO
 import Picamera
@@ -30,7 +33,57 @@ def index(request):
     active_2 = 1
     active_3 = 1
     active_4 = 1
-    return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4})
+    imarray = np.random.rand(480,640,3) * 255
+    mock_imarray = str(imarray)
+    randomized_array = mock_imarray[:1000]
+    r = RandomWords()
+    randomized_text = r.get_random_word()
+    randomized_weight = random.randint(40, 61)
+    randomized_score = random.choice([False,False])
+
+    if request.method == 'GET':
+        return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4,
+            "form_event_dummy":EventForm(),
+            "randomized_text":randomized_text,
+            "randomized_array":randomized_array,
+            "randomized_weight":randomized_weight,
+            "randomized_score":randomized_score  
+        })    
+    else:
+        if request.method == 'POST':
+            dummy_form = EventForm(request.POST)
+            if dummy_form.is_valid():
+                 dummy_form.save()
+                 return redirect('event_history')
+            else:
+                return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4,
+            "form_event_dummy":EventForm(),
+            "randomized_text":randomized_text,
+            "randomized_array":randomized_array,
+            "randomized_weight":randomized_weight,
+            "randomized_score":randomized_score,
+            "result":"something went wrong!"
+        })
+
+def event_read(request, pk):
+    e = get_object_or_404(Event, pk=pk)
+    return render(request,"read.html",{"e":e})
+
+def event_update(request, pk):
+    e = get_object_or_404(Event, pk=pk)
+    form = EventForm(request.POST)
+    if form.is_valid():
+        form.save()
+        return redirect('event_history')
+    else:
+        return redirect('event_update')
+
+def event_delete(request, pk):
+    e = get_object_or_404(Event, pk=pk)
+    if request.method == 'POST':
+        e.delete()
+        return redirect('events_history')
+
 
 def robot_homing(request):
     active_1 = 0
@@ -142,11 +195,13 @@ def robot_kinematics_forward(request):
     return render(request,"kinematics_forward.html")
 
 def robot_kinematics_forward_result(request):
-    theta_1 =request.GET['angle_1']
-    theta_2 =request.GET['angle_2']
-    theta_3 =request.GET['angle_3']
-    theta_4 = request.GET['angle_4']
+    theta_1 =float(request.GET['angle_1'])
+    theta_2 =float(request.GET['angle_2'])
+    theta_3 =float(request.GET['angle_3'])
+    theta_4 =float(request.GET['angle_4'])
+    
     answer = forward_kinematics(theta_1,theta_2,theta_3,theta_4)
+    
     return render(request,"kinematics_forward.html",
     {'theta_1':theta_1,
     'theta_2':theta_2,
@@ -158,9 +213,9 @@ def robot_kinematics_inverse(request):
     return render(request,"kinematics_inverse.html")
 
 def robot_kinematics_inverse_result(request):
-    displacement_x =request.GET['target_x']
-    displacement_y =request.GET['target_y']
-    displacement_z =request.GET['target_z']
+    displacement_x =float(request.GET['target_x'])
+    displacement_y =float(request.GET['target_y'])
+    displacement_z =float(request.GET['target_z'])
     answer = inverse_kinematics(displacement_x,displacement_y,displacement_z)
     return render(request,"kinematics_inverse.html",
     {'d_x':displacement_x,
