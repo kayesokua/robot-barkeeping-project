@@ -31,7 +31,6 @@ INSTALLED_APPS = [
     'barkeeper',
     'rest_framework',
     'fake_rpi',
-    'random_word',
     'debug_toolbar',
     'django_extensions'
 ]

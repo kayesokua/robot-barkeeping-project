@@ -6,7 +6,7 @@ from django.test import TestCase
 from barkeeper.models import Event
 from django.utils import timezone
 from django.urls import reverse
-from random_word import RandomWords
+#from random_word import RandomWords
 from unittest import mock
 import numpy
 import yaml
@@ -19,8 +19,8 @@ imarray = numpy.random.rand(480,640,3) * 255
 mock_imarray = str(imarray)
 cut_mock_imarray = mock_imarray[:1000]
 
-r = RandomWords()
-mock_text = r.get_random_word()
+#r = RandomWords()
+mock_text = "random text" #r.get_random_word()
 mock_weight = round(random.uniform(40, 80),2)
 mock_score = random.choice([True, False])
 mock_date = datetime.datetime(2022, 5, 13, 4, 0, 2, tzinfo=pytz.utc)

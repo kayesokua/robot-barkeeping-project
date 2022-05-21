@@ -1,12 +1,13 @@
 from difflib import diff_bytes
 import random
 import sys
-import fake_rpi
+#import fake_rpi
 
-sys.modules['RPi'] = fake_rpi.RPi     # Fake RPi
-sys.modules['RPi.GPIO'] = fake_rpi.RPi.GPIO # Fake GPIO
-sys.modules['Picamera'] = fake_rpi.picamera # Fake picamera
-print(sys.modules['RPi.GPIO'])
+#sys.modules['RPi'] = fake_rpi.RPi     # Fake RPi
+#sys.modules['RPi.GPIO'] = fake_rpi.RPi.GPIO # Fake GPIO
+#sys.modules['Picamera'] = fake_rpi.picamera # Fake picamera
+#print(sys.modules['RPi.GPIO'])
+
 from django.contrib.auth.models import User
 from rest_framework import permissions
 from barkeeper.models import Event
@@ -15,10 +16,14 @@ from barkeeper.utils import *
 from barkeeper.serializers import EventSerializer, UserSerializer
 from rest_framework import generics
 from django.shortcuts import redirect, render, get_object_or_404
-from random_word import RandomWords
+#from random_word import RandomWords
 
 import RPi.GPIO as GPIO
-import Picamera
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import cv2
+import pytesseract
+from numpy import asarray
 
 Pins = {
    13: {"name" : "gripper", "homing_pos": 60, "sleep_time":0.2,"task_pos":0, "sleep_time_task":0.05},
@@ -36,8 +41,8 @@ def index(request):
     imarray = np.random.rand(480,640,3) * 255
     mock_imarray = str(imarray)
     randomized_array = mock_imarray[:1000]
-    r = RandomWords()
-    randomized_text = r.get_random_word()
+    #r = RandomWords()
+    randomized_text = "random text" #r.get_random_word()
     randomized_weight = random.randint(40, 61)
     randomized_score = random.choice([False,False])
 
@@ -132,20 +137,39 @@ def robot_pour(request):
 
 def camera_start(request):
     active_1 = 1
-    camera = Picamera()
-    camera.framerate = 30
-    camera.preview_fullscreen=False
-    camera.preview_window=(640, 480, 640, 480)
+    camera = PiCamera()
     camera.resolution = (640, 480)
-    camera.start_preview()
-    time.sleep(10)
-    camera.stop_preview()
-    camera_switch = False
-    # ocr_text
-    return render(request,"index.html",{'active_1':active_1})
+    camera.framerate = 30
+    rawCapture = PiRGBArray(camera, size=(640, 480))
+    
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        image = frame.array
+        cv2.imshow("Frame", image)
+        time.sleep(10)
+        camera.capture('/home/pi/Desktop/image.jpg')
+        cv2.destroyAllWindows()
+        
+        return redirect('camera_ocr')
+
+    return render(request,"index.html",{'active_1':active_1,"result":"Camera is starting"})
+
+import re
+def camera_ocr(request):
+    active_1 = 1
+    image = Image.open('/home/pi/Desktop/screenshot.png')
+    image_ocr_raw = pytesseract.image_to_string(image, timeout=3)
+    image_ocr = re.sub(r'[^\w]', '', image_ocr_raw)
+    image_npdata = asarray(image)
+    
+    if len(image_ocr) > 3:
+        result = find_drink(image_ocr)
+        return render(request,"index.html",{'active_1':active_1,"result":result})
+    else:
+        return render(request,"index.html",{'active_1':active_1,"result": "The translated text is less than 3 characters. Please try again"})
+
+
 
 # Functions for Load Cell starts here
-
 def hx711_setup():
     GPIO.setwarnings(False)
     # Calculating the reference unit

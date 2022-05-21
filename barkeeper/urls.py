@@ -6,6 +6,7 @@ import barkeeper.views as views
 urlpatterns = [
     path('', views.index, name='home'),
     path('camera/', views.camera_start, name='camera_start'),
+    path('camera/ocr', views.camera_ocr, name='camera_ocr'),
     path('loadcell/', views.loadcell_start, name='loadcell_start'),
     path('robot/', views.robot_homing, name='robot_homing'),
     path('robot/homing', views.robot_homing, name='robot_homing'),
