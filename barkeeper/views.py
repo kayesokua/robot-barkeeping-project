@@ -26,11 +26,11 @@ import pytesseract
 from numpy import asarray
 
 Pins = {
-   13: {"name" : "gripper", "homing_pos": 60, "sleep_time":0.2,"task_pos":0, "sleep_time_task":0.05},
-   11: {"name" : "wrist", "homing_pos": 0, "sleep_time":0.0,"task_pos":80, "sleep_time_task":0.0},
-   15: {"name" : "upper_arm", "homing_pos": 150, "sleep_time":0.0,"task_pos":120, "sleep_time_task":0.0},
-   37: {"name" : "lower_arm", "homing_pos": 120, "sleep_time":0.0,"task_pos":0, "sleep_time_task":0.0},
-   35: {"name" : "waist", "homing_pos": 0, "sleep_time":0.0,"task_pos":0, "sleep_time_task":0.0}
+   27: {"name" : "gripper", "homing_pos": 30, "sleep_time":0.2,"task_pos":0, "sleep_time_task":0.05},
+   17: {"name" : "wrist", "homing_pos": 0, "sleep_time":0.0,"task_pos":80, "sleep_time_task":0.0},
+   22: {"name" : "upper_arm", "homing_pos": 150, "sleep_time":0.0,"task_pos":120, "sleep_time_task":0.0},
+   26: {"name" : "lower_arm", "homing_pos": 60, "sleep_time":0.0,"task_pos":0, "sleep_time_task":0.0},
+   19: {"name" : "waist", "homing_pos": 0, "sleep_time":0.0,"task_pos":0, "sleep_time_task":0.0}
 }
 
 def index(request):
@@ -94,16 +94,13 @@ def robot_homing(request):
     active_1 = 0
     active_2 = 0
     active_3 = 1
-    active_4 = 0
-
+    active_4 = 0 
     for pin,config in Pins.items():
-        GPIO.setmode(GPIO.BOARD)
-        motor = motor_setup(pin)
+        print(pin)
+        motor_setup(pin)
         homing_pos = config["homing_pos"]
-        dc = degree_to_DC(homing_pos)
-        change_DC(motor,dc)
-        time.sleep(config["sleep_time"])
-        clean_up(motor)
+        turn(pin, homing_pos)
+       
     return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4, "result": "Homing has successfully completed."})
 
 def robot_grab(request):
@@ -111,13 +108,29 @@ def robot_grab(request):
     active_2 = 0
     active_3 = 1
     active_4 = 0
-    GPIO.setmode(GPIO.BOARD)
-    gripper = motor_setup(13)
-    wrist = motor_setup(11)
-    test_range(gripper)
-    clean_up(gripper)
-    test_range(wrist)
-    clean_up(wrist)
+    
+    gripper = 27
+    lower_arm = 26
+    upper_arm = 22
+    waist = 19
+    
+    motor_setup(gripper)
+    motor_setup(lower_arm)
+    motor_setup(upper_arm)
+    motor_setup(waist)
+
+    
+    to_full_open(gripper)
+
+    turn(waist,2)
+    time.sleep(3)
+    turn(lower_arm,1.2)
+    turn(upper_arm,80)
+
+    time.sleep(2)
+    grab(gripper)
+    time.sleep(2)
+    
     return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4, "result": "Grab has successfully completed."})
 
 def robot_pour(request):
@@ -125,13 +138,36 @@ def robot_pour(request):
     active_2 = 0
     active_3 = 1
     active_4 = 0
-    GPIO.setmode(GPIO.BOARD)
-    gripper = motor_setup(13)
-    wrist = motor_setup(11)
-    test_range(gripper)
-    clean_up(gripper)
-    test_range(wrist)
-    clean_up(wrist)
+    
+    gripper = 27
+    lower_arm = 26
+    upper_arm = 22
+    waist = 19
+    wrist = 17
+    
+    motor_setup(gripper)
+    motor_setup(lower_arm)
+    motor_setup(upper_arm)
+    motor_setup(waist)
+    # lift up
+    turn(lower_arm,60)
+    turn(upper_arm,140)
+    time.sleep(2)
+    # to the load sensor
+    turn(waist,180)
+    time.sleep(2)
+    # lower the arm
+    turn(lower_arm,0)
+    turn(upper_arm,90)
+
+    time.sleep(2)
+    # pouring
+    turn(wrist,80)
+    time.sleep(2)
+    turn(wrist,0)
+    
+    time.sleep(5)
+
     return render(request,"index.html", {'active_1':active_1,'active_2':active_2,'active_3':active_3,'active_4':active_4, "result": "Pouring has successfully completed."})
 
 
@@ -223,7 +259,6 @@ def robot_kinematics_forward_result(request):
     theta_2 =float(request.GET['angle_2'])
     theta_3 =float(request.GET['angle_3'])
     theta_4 =float(request.GET['angle_4'])
-    
     answer = forward_kinematics(theta_1,theta_2,theta_3,theta_4)
     
     return render(request,"kinematics_forward.html",
@@ -241,6 +276,7 @@ def robot_kinematics_inverse_result(request):
     displacement_y =float(request.GET['target_y'])
     displacement_z =float(request.GET['target_z'])
     answer = inverse_kinematics(displacement_x,displacement_y,displacement_z)
+
     return render(request,"kinematics_inverse.html",
     {'d_x':displacement_x,
     'd_y':displacement_y,

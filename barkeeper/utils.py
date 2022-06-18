@@ -43,26 +43,21 @@ filedate = str(now.strftime('%Y%m%d%H%M%S'))
     # print(image_ocr)
     # print(image_npdata)
 
+import pigpio
+
+pwm = pigpio.pi()
+
 def motor_setup(pin):
-    GPIO.setup(pin, GPIO.OUT)
-    motor = GPIO.PWM(pin, 50)
-    motor.start(0)
-    return motor
+    pwm.set_PWM_frequency(pin, 50)
+
+def degree_to_PW(degree):
+    pw = (200/18)*(degree)+500
+    return pw
+
+def turn(motor,degree):
+    pw = degree_to_PW(degree)
+    pwm.set_servo_pulsewidth(motor,pw)
     
-def degree_to_DC(degree):
-    dc = 1/18*(degree)+2
-    return dc
-
-def change_DC(motor,dc):
-    motor.ChangeDutyCycle(dc)
-    time.sleep(0.2)
-    motor.ChangeDutyCycle(0)
-    time.sleep(0.8)
-
-def clean_up(motor):
-    motor.stop()
-    GPIO.cleanup()
-
 def test_range(motor):
     for degree in range(0,181,30):
         dc = degree_to_DC(degree)
@@ -74,6 +69,19 @@ def test_range(motor):
         change_DC(motor,dc)
         print("the degree turns to: ",degree)
 
+def to_full_open(motor):
+    pos = 90
+    turn(motor, pos)
+    time.sleep(0.2)
+
+def grab(motor):
+    turn(motor, 30)
+
+def get_drink():
+    turn(waist,waist_degree)
+    time.sleep(3)
+    turn(lower_arm,lower_arm_degree)
+    turn(upper_arm,upper_arm_degree)
 
 # HX711 for Raspbery Py
 # Author: tatobari
@@ -488,79 +496,93 @@ class HX711:
         self.power_up()
 # EOF - hx711.py
 
-# Denavit-Hartenberg Parameters for 4-DOF
-a_1= 16 #cm
-a_2= 11.4 #cm
-a_3= 14.8 #cm
-
-d_1 = 13.6 #cm displacement of the waist axis to the lower arm axis 
-d_2 = 12 #cm length of lower arm axis to upper arm axis
-d_3 = 6 #cm length of upper_arm axis to wrist axis
-d_4 = 12 #cm length of wrist axis to center of gripper
-d_5 = 19 #cm displacement of center of gripper to waist axis
-d_6 = 5.5 #cm displacement of waist axis to ground
-
 def forward_kinematics(theta_1,theta_2,theta_3,theta_4):
 
-    # Declare the Denavit-Hartenberg table. 
-    # It will have four columns, to represent:
-    # theta, alpha, r, and d
-    # We have the convert angles to radians.
-    PT = [[np.deg2rad(theta_1), np.deg2rad(180), 0, a_1],
-      [np.deg2rad(theta_2), np.deg2rad(180), a_2, 0],
-      [np.deg2rad(theta_3), np.deg2rad(180), a_3, 0]]
+    d_1= 16 #cm
+    a_2= 11.4 #cm
+    a_3=  6.5 #cm
+    a_4 = 14.8 - 6.5  #based on open position
 
-   # Homogeneous Transformation Matrices - Solution 1
-    i = 0
-    H0_1 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
-            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
-            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
-            [0, 0, 0, 1]]
+    theta_1 = np.deg2rad(theta_1) 
+    theta_2 = np.deg2rad(theta_2) 
+    theta_3 = np.deg2rad(theta_3) 
+    theta_4 = np.deg2rad(theta_4) 
 
-    i = 1
-    H1_2 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
-            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
-            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
-            [0, 0, 0, 1]]
+    H0_1 = [[cos(theta_1),0,sin(theta_1),0],
+            [sin(theta_1),0,-cos(theta_1),0],
+            [0,1,0,d_1],
+            [0,0,0,1]]
 
-    i = 2
-    H2_3 = [[cos(PT[i][0]), -sin(PT[i][0])*cos(PT[i][1]), sin(PT[i][0])*sin(PT[i][1]), PT[i][2]*cos(PT[i][0])],
-            [sin(PT[i][0]), cos(PT[i][0])*cos(PT[i][1]), -cos(PT[i][0])*sin(PT[i][1]), PT[i][2]*sin(PT[i][0])],
-            [0, sin(PT[i][1]), cos(PT[i][1]), PT[i][3]],
-            [0, 0, 0, 1]]
+    H1_2 = [[cos(theta_2),-sin(theta_2),0,(a_2*cos(theta_2))],
+            [sin(theta_2),cos(theta_2),0,(a_2**sin(theta_2))],
+            [0,0,1,0],
+            [0,0,0,1]]
+
+    H2_3 = [[0,-sin(theta_3),cos(theta_3),a_3*sin(theta_3)],
+            [0,cos(theta_1),sin(theta_3),a_3*sin(theta_1)],
+            [-1,0,0,0],
+            [0,0,0,1]]
+
+    H3_4 = [[cos(theta_4),-sin(theta_4),0,0],
+            [sin(theta_4),cos(theta_4),0,0],
+            [-1,0,0,0],
+            [0,0,0,1]]
     
     H0_2 = np.dot(H0_1,H1_2)
     H0_3 = np.dot(H0_2,H2_3)
-    H0_3_final = np.matrix(H0_3, dtype=np.int)
-
-    # Homogeneous Transformation Matrices - Solution 2
-    displacement_x = a_2*cos(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)) + a_3*cos(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)+np.deg2rad(theta_3))
-    displacement_y = a_2*sin(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)) + a_3*sin(np.deg2rad(theta_1))*cos(np.deg2rad(theta_2)+np.deg2rad(theta_3))    
-    displacement_z = a_1 + a_2*sin(np.deg2rad(theta_2))+ a_3*sin(np.deg2rad(theta_2)+np.deg2rad(theta_3))
-
-    result = {"x":round(displacement_x,2), "y":round(displacement_y,2), "z":round(displacement_z,2)}
+    H0_4 = np.dot(H0_3,H3_4)
    
-    return str(H0_3_final), str(result)
+    return str(H0_4)
 
 
 def inverse_kinematics(displacement_x,displacement_y,displacement_z):
-    r2 = sqrt(displacement_x**2+displacement_y**2) # equation 1
-    T1 = acos(((r2**2)+(displacement_x**2)-(displacement_y**2))/(2*r2*displacement_x)) #equation 2
-    r1 = sqrt((displacement_z-a_1)*(displacement_z-a_1)+(r2*r2)) #equation 3
-    phi1 = atan((displacement_z-a_1)/r2) #equation 4
-    #phi2 = acos(((a_2**2)+(r1**2)-(a_3**2))/(2*a_2*r1)) #equation 5
-    #T2 = phi1+phi2 #radians #equation 6
-    #phi3 = acos(((a_3**2)+(r1*r1)-(a_2**2))/(2*a_3*r1)) #equation 7
-    #T3 = 1.5708-phi2-phi3 #radians #equation 8
-    T3 = 1
-    T2 = 1
-    T1 = 1
-    theta_1 = 180-T3/3.14159*180.0-10
-    theta_2 = T2/3.14159*180.0+10
-    theta_3 = T1/3.14159*180
-    theta_4 = 0
-    result = [round(theta_1,2), round(theta_2,2), round(theta_3,2), round(theta_4,2)]
+    X = displacement_x
+    Y = displacement_y
+    Z = displacement_z
+    a1= 16 #cm
+    a2= 11.4 #cm
+    a3= 14.8 #cm
+
+    r2 = sqrt(X*X+Y*Y) # equation 1
+
+    T1 = acos(((r2*r2)+(X*X)-(Y*Y))/(2*r2*X)) #equation 2
+
+    r1 = sqrt((Z-a1)*(Z-a1)+(r2*r2)) #equation 3
+
+    phi1 = atan((Z-a1)/r2) #equation 4
+
+    phi2 = acos(((a2*a2)+(r1*r1)-(a3*a3))/(2*a2*r1)) #equation 5
+
+    T2 = phi1+phi2 #radians #equation 6
+
+    phi3 = acos(((a3*a3)+(r1*r1)-(a2*a2))/(2*a3*r1)) #equation 7
+
+    T3 = 1.5708+phi2+phi3 #radians #equation 8
+
+    theta_3 = 180-T3/3.14159*180.0-10
+    theta_2 = T2/3.14159*180.0
+    theta_1 = T1/3.14159*180
+
+    #Using the geometrical approach to solve inverse kinematics
+#     d_1= 16 #cm
+#     a_2= 11.4 #cm
+#     a_3=  6.5 #cm
+#     a_4 = 14.8 - 6.5  #based on open position
+#     r = sqrt(displacement_x**2+displacement_y**2)
+#     d_2 = displacement_z - d_1
+#     theta_1 = np.degrees(atan2(displacement_x,displacement_y))
+#     r_2 = sqrt(displacement_x**2+displacement_y**2) # projection of r to x
+#     r_3 = sqrt((d_2**2)+(r_2**2))
+#     phi_1 = acos(d_2/r_2)
+#     phi_2 = acos((a_2**2+r_3**2)-(a_3+a_4)**2/2*a_2*r_3)
+#     theta_2 = np.degrees(phi_1+phi_2)
+#     phi_3 = acos((a_3+a_4)**2+r_3**2-(a_2**2)/(2*(a_3+a_4)+r_3))
+#     phi_4 = np.deg2rad(180) - phi_2 - phi_3 - np.deg2rad(90)
+#     theta_3 = 180 - np.degrees(phi_4)
     
+    
+    
+    result = [round(theta_1,2), round(theta_2,2), round(theta_3,2)]
     return result
     
 import json
